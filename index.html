@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI Video Master - Login System</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script> <!-- THÊM DÒNG NÀY -->
+
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95' },
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
+                        fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+ 
+
+        body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 16px; color: #94a3b8; font-weight: 600; transition: all 0.3s ease; cursor: pointer; margin-bottom: 8px; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-item.active { background: linear-gradient(90deg, #8b5cf6, #ec4899); color: white; box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.4); }
+        .tab-content { display: none; opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        .tab-content.active { display: flex; opacity: 1; transform: translateY(0); }
+        
+        /* Auth Styles */
+        .auth-bg { background: radial-gradient(circle at top right, #c4b5fd, transparent 40%), radial-gradient(circle at bottom left, #f9a8d4, transparent 40%), #f8fafc; }
+    </style>
+</head>
+<body class="h-[100dvh] text-slate-800 relative overflow-hidden bg-[#f1f5f9]">
+
+    <!-- ================= AUTH SCREEN ================= -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] auth-bg flex items-center justify-center p-6">
+        <div class="bg-white/80 backdrop-blur-xl border border-white p-8 rounded-[32px] shadow-2xl w-full max-w-md animate-slide-up">
+            <div class="text-center mb-8">
+              <div class="flex justify-center mb-6">
+                <img src="https://chungnhan.bke.edu.vn/assets/images/logoBKE.png" class="h-20 w-auto object-contain drop-shadow-md" alt="Logo BKE">
+            </div>
+
+                <h1 class="text-2xl font-bold text-slate-800">AI Video Master</h1>
+                <p class="text-slate-500 text-sm mt-1">Đăng nhập để tiếp tục</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Tài khoản</label>
+                    <input type="text" id="login-user" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-brand-500 transition-colors" placeholder="user">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Mật khẩu</label>
+                    <input type="password" id="login-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-brand-500 transition-colors" placeholder="******">
+                </div>
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all active:scale-95">Đăng nhập</button>
+                <div class="text-center mt-4">
+                    <button type="button" onclick="auth.toggleView('register')" class="text-sm text-brand-600 font-bold hover:underline">Chưa có tài khoản? Đăng ký</button>
+                </div>
+            </form>
+
+            <!-- Register Form (Hidden) -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Tên đăng nhập mới</label>
+                    <input type="text" id="reg-user" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-brand-500 transition-colors">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Mật khẩu</label>
+                    <input type="password" id="reg-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-brand-500 transition-colors">
+                </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95">Đăng ký ngay</button>
+                <div class="text-center mt-4">
+                    <button type="button" onclick="auth.toggleView('login')" class="text-sm text-slate-500 font-bold hover:underline">Quay lại Đăng nhập</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP (Hidden by default) ================= -->
+    <div id="app-container" class="hidden h-full flex flex-col md:flex-row relative">
+        
+        <!-- --- DESKTOP SIDEBAR --- -->
+        <aside class="hidden md:flex flex-col w-72 bg-[#0f172a] h-full fixed left-0 top-0 z-50 p-6 shadow-2xl text-white">
+            <div class="flex items-center gap-3 mb-10 px-2">
+               <div class="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-brand-500/30">
+    <img src="https://chungnhan.bke.edu.vn/assets/images/logoBKE.png" class="w-full h-full object-contain" alt="Logo">
+</div>
+                <div>
+                    <h1 class="text-xl font-bold leading-none tracking-tight">AI MASTER</h1>
+                    <p id="display-role" class="text-xs text-brand-400 font-bold tracking-widest mt-1 uppercase">USER</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <div onclick="app.switchTab('home')" class="sidebar-item active" id="sidebar-home">
+                    <i data-lucide="layout-grid" class="w-5 h-5"></i><span>Trang chủ</span>
+                </div>
+                <div onclick="app.switchTab('history')" class="sidebar-item" id="sidebar-history">
+                    <i data-lucide="history" class="w-5 h-5"></i><span>Lịch sử</span>
+                    <span id="badge-count" class="ml-auto bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full hidden">0</span>
+                </div>
+                <div onclick="app.switchTab('chat')" class="sidebar-item" id="sidebar-chat">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i><span>Trợ lý AI</span>
+                </div>
+                <!-- Admin Only Item -->
+                <div onclick="adminPanel.open()" class="sidebar-item hidden" id="sidebar-admin">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-red-400"></i><span class="text-red-100">Quản trị Admin</span>
+                </div>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-slate-700/50">
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <div class="text-xs text-slate-400">
+                        <p class="font-bold text-white mb-1" id="display-username">User</p>
+                        <p>Usage: <span id="display-usage" class="text-brand-400">0</span> / <span id="display-limit">5</span></p>
+                    </div>
+                </div>
+                <div onclick="app.toggleSettings()" class="sidebar-item">
+                    <i data-lucide="settings" class="w-5 h-5"></i><span>Cài đặt</span>
+                </div>
+                <div onclick="auth.logout()" class="sidebar-item hover:bg-red-500/10 hover:text-red-400 mt-2">
+                    <i data-lucide="log-out" class="w-5 h-5"></i><span>Đăng xuất</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- --- MOBILE HEADER --- -->
+        <header class="md:hidden h-16 px-5 flex items-center justify-between glass sticky top-0 z-30 shadow-sm">
+            <div class="flex items-center gap-3">
+               <img src="https://chungnhan.bke.edu.vn/assets/images/logoBKE.png" class="w-10 h-10 object-contain" alt="Logo">
+
+                <div>
+                    <h1 class="text-base font-bold text-slate-900 leading-tight">AI Master</h1>
+                    <p id="mobile-role" class="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full inline-block">USER</p>
+                </div>
+            </div>
+            <button onclick="app.toggleSettings()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <!-- --- MAIN CONTENT --- -->
+        <main class="flex-1 overflow-hidden relative w-full md:ml-72 md:w-[calc(100%-18rem)]">
+            
+            <!-- TAB 1: HOME -->
+            <div id="view-home" class="tab-content active flex-col h-full overflow-y-auto p-5 pb-32 md:p-10 no-scrollbar">
+                <div class="max-w-4xl w-full mx-auto">
+                    <div class="bg-white rounded-[24px] p-6 shadow-xl shadow-slate-200/50 mb-8 animate-slide-up border border-slate-100">
+                    <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-3 focus-within:ring-2 focus-within:ring-brand-100">
+    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+        <i data-lucide="folder" class="w-3 h-3"></i> Tên Thư mục / Dự án
+    </label>
+    <input type="text" id="folder-input" list="folder-suggestions" class="w-full bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:font-normal" placeholder="Ví dụ: Marketing, Học tập, Giải trí...">
+    <datalist id="folder-suggestions"></datalist> <!-- Gợi ý các folder đã có -->
+</div>
+
+<!-- Ô Nhập URL (CŨ - giữ nguyên bên dưới) -->
+<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-4 focus-within:ring-2 focus-within:ring-brand-100">
+    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+        <i data-lucide="link" class="w-3 h-3"></i> Nhập liên kết video
+    </label>
+    <textarea id="url-input" rows="3" class="w-full bg-transparent text-sm font-medium text-slate-700 outline-none resize-none" placeholder="Dán link Facebook, TikTok, Youtube... vào đây"></textarea>
+</div>
+
+                        <button onclick="app.startQueue()" class="w-full bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-700 hover:to-pink-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-brand-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2 group">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i> Bắt đầu xử lý
+                        </button>
+                    </div>
+
+                    <div class="animate-slide-up" style="animation-delay: 0.1s;">
+                        <h3 class="text-base font-bold text-slate-700 flex items-center gap-2 mb-4">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Tiến trình xử lý
+                            <span id="queue-count" class="ml-auto text-xs font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded-full">0 task</span>
+                        </h3>
+                        <div id="queue-list" class="space-y-3 min-h-[100px]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: HISTORY -->
+          <!-- TAB 2: HISTORY -->
+<div id="view-history" class="tab-content flex-col h-full overflow-hidden relative bg-[#f8fafc]">
+    <!-- Header: Search & Controls -->
+    <div class="shrink-0 px-5 pt-5 pb-2 md:px-10 z-20 bg-[#f8fafc]">
+        <div class="max-w-7xl mx-auto flex items-center gap-2 md:gap-3">
+            
+            <!-- 1. Ô TÌM KIẾM -->
+            <div class="relative group flex-1">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input type="text" 
+                    id="history-search-input"
+                    onkeyup="app.renderHistory(this.value)" 
+                    placeholder="Tìm kiếm..." 
+                    class="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all shadow-sm font-medium text-slate-700">
+            </div>
+
+            <!-- 2. NÚT TẠO FOLDER (MỚI) -->
+            <button onclick="app.addNewFolder()" class="w-14 h-[50px] bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-brand-600 hover:bg-brand-50 hover:border-brand-200 shadow-sm active:scale-95 transition-all group" title="Tạo thư mục mới">
+                <i data-lucide="folder-plus" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+            </button>
+
+            <!-- 3. NÚT CHUYỂN ĐỔI VIEW (LIST / KANBAN) -->
+            <button onclick="app.toggleHistoryView()" class="w-14 h-[50px] bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50 shadow-sm active:scale-95 transition-all" title="Chuyển chế độ xem">
+                <i id="view-icon" data-lucide="kanban-square" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Container Nội dung -->
+    <div class="flex-1 overflow-hidden relative w-full h-full">
+        
+        <!-- MODE 1: LIST VIEW -->
+        <div id="history-list-container" class="h-full overflow-y-auto p-5 pb-32 md:p-10 md:pt-2 pt-2 no-scrollbar">
+            <div class="max-w-4xl mx-auto">
+                <div id="history-list" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- MODE 2: KANBAN VIEW -->
+        <div id="kanban-board" class="hidden h-full w-full overflow-x-auto overflow-y-hidden p-5 pb-32 md:p-10 md:pt-2 md:pb-10 pt-2">
+            <div id="kanban-columns" class="flex h-full gap-5 min-w-max pb-4">
+                <!-- Render bằng JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    /* CSS bổ sung cho thanh cuộn Kanban đẹp hơn */
+    #kanban-board::-webkit-scrollbar { height: 8px; }
+    #kanban-board::-webkit-scrollbar-track { background: transparent; }
+    #kanban-board::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+    .kanban-column-body::-webkit-scrollbar { width: 4px; }
+    .kanban-column-body::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 10px; }
+</style>
+
+
+                     <!-- TAB 3: CHAT -->
+<div id="view-chat" class="tab-content h-full w-full relative bg-[#f8fafc] overflow-hidden">
+    
+    <!-- 1. KHU VỰC TIN NHẮN (Nằm chìm bên dưới, tràn màn hình) -->
+    <!-- 
+       - absolute inset-0: Tràn đầy khung hình 
+       - pt-[120px]: Padding trên để tránh bị Header che
+       - pb-[100px]: Padding dưới để tránh bị Input che
+    -->
+    <div id="chat-messages" class="absolute inset-0 z-0 overflow-y-auto px-4 md:px-10 pt-[120px] pb-[100px] scroll-smooth custom-scrollbar">
+        <div class="max-w-3xl mx-auto flex gap-4 animate-slide-up">
+            <div class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/30">
+                <i data-lucide="bot" class="w-5 h-5"></i>
+            </div>
+            <div class="bg-white p-5 rounded-3xl rounded-tl-none border border-slate-100 text-slate-600 shadow-sm max-w-[85%] leading-relaxed">
+                Xin chào! Hãy chọn video từ thanh ngữ cảnh phía trên để mình trả lời chính xác hơn nhé.
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. THANH NGỮ CẢNH (Ghim chặt lên ĐỈNH) -->
+    <div class="absolute top-0 left-0 right-0 z-30 w-full px-4 pt-4 pb-2 md:pt-6 bg-gradient-to-b from-[#f8fafc] via-[#f8fafc]/95 to-transparent">
+        <div class="max-w-3xl mx-auto relative">
+            <button onclick="app.toggleChatDropdown()" id="dropdown-trigger" class="w-full bg-white shadow-sm border border-slate-200 p-3.5 flex items-center justify-between transition-all rounded-2xl hover:border-brand-300 group hover:shadow-md cursor-pointer">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 border border-brand-100 group-hover:scale-110 transition-transform">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                    </div>
+                    <div class="text-left min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ngữ cảnh</p>
+                            <span id="selected-count-badge" class="hidden bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                        </div>
+                        <p id="dropdown-label" class="text-sm font-bold text-slate-800 truncate leading-tight mt-0.5">Chat Tự do</p>
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 ml-2 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+                    <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300" id="dropdown-icon"></i>
+                </div>
+            </button>
+
+            <!-- Dropdown List -->
+            <div id="chat-dropdown-wrapper" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-fade-in max-h-[60vh]">
+                <div class="p-3 border-b border-slate-100 bg-white rounded-t-2xl shrink-0 z-10" onclick="event.stopPropagation()">
+                    <div class="relative bg-slate-50 rounded-xl border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition-all">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="context-search-input" onkeyup="app.renderDropdownItems(this.value)" 
+                            placeholder="Tìm video hoặc folder..." 
+                            class="w-full bg-transparent text-sm py-2.5 pl-10 pr-3 outline-none text-slate-700 font-medium placeholder:text-slate-400">
+                    </div>
+                </div>
+                <div id="chat-dropdown-list" class="overflow-y-auto p-2 space-y-1 min-h-0" onclick="event.stopPropagation()"></div>
+                <div class="p-3 border-t border-slate-100 bg-slate-50 rounded-b-2xl shrink-0 z-10 flex justify-between items-center" onclick="event.stopPropagation()">
+                    <span class="text-xs text-slate-500 font-medium pl-1">
+                        Đang chọn: <b class="text-brand-600" id="footer-count">0</b> video
+                    </span>
+                    <button onclick="app.toggleChatDropdown()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
+                        Lưu & Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Ô NHẬP LIỆU (Ghim chặt xuống ĐÁY) -->
+    <!-- absolute bottom-0: Luôn dính đáy bất kể nội dung bên trên -->
+    <div class="absolute bottom-0 left-0 right-0 z-20 w-full p-4 md:pb-6 bg-white/80 backdrop-blur-xl border-t border-slate-200/50">
+        <div class="relative max-w-3xl mx-auto">
+            <div class="relative shadow-xl shadow-slate-200/50 rounded-full bg-white border border-slate-200 focus-within:border-brand-400 focus-within:ring-4 focus-within:ring-brand-500/10 transition-all">
+                <input type="text" id="chat-input" class="w-full bg-transparent rounded-full pl-6 pr-14 py-4 text-sm font-medium outline-none text-slate-700 placeholder:text-slate-400" placeholder="Đặt câu hỏi về nội dung...">
+                <button onclick="app.sendMessage()" class="absolute right-2 top-2 w-10 h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-md shadow-brand-500/20">
+                    <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Khoảng trống dự phòng cho mobile nav (chỉ hiện trên mobile) -->
+        <div class="h-12 md:hidden"></div> 
+    </div>
+</div>
+
+
+
+        </main>
+
+    <!-- --- MOBILE NAV --- -->
+        <div class="md:hidden fixed z-40 bottom-0 left-0 w-full bg-white/95 backdrop-blur-xl border-t border-slate-200 pb-[env(safe-area-inset-bottom)] shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+            <nav class="flex items-center justify-around w-full h-16">
+                <button onclick="app.switchTab('home')" class="flex-1 h-full flex items-center justify-center text-brand-600 active:scale-90 transition-transform" id="tab-home">
+                    <i data-lucide="layout-grid" class="w-6 h-6"></i>
+                </button>
+                <button onclick="app.switchTab('history')" class="flex-1 h-full flex items-center justify-center text-slate-400 active:scale-90 transition-transform" id="tab-history">
+                    <i data-lucide="history" class="w-6 h-6"></i>
+                </button>
+                <button onclick="app.switchTab('chat')" class="flex-1 h-full flex items-center justify-center text-slate-400 active:scale-90 transition-transform" id="tab-chat">
+                    <i data-lucide="message-circle" class="w-6 h-6"></i>
+                </button>
+                <button onclick="adminPanel.open()" class="flex-1 h-full flex items-center justify-center text-red-400 hidden active:scale-90 transition-transform" id="tab-admin">
+                    <i data-lucide="shield" class="w-6 h-6"></i>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 z-[60] hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl transform transition-transform">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 text-center">Cài đặt</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Gemini API Key</label>
+                    <input type="password" id="api-key-input" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1 outline-none text-sm" placeholder="sk-...">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="app.toggleSettings()" class="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">Đóng</button>
+                    <button onclick="app.saveSettings()" class="w-full bg-brand-600 text-white py-3 rounded-xl font-bold">Lưu</button>
+                </div>
+                <button onclick="auth.logout()" class="w-full text-red-500 py-2 text-sm font-bold">Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL MODAL -->
+    <div id="modal-admin" class="fixed inset-0 z-[70] hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[32px] p-6 shadow-2xl h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-6 h-6 text-red-500"></i> Quản trị hệ thống
+                </h3>
+                <button onclick="adminPanel.close()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <input type="text" id="admin-new-user" placeholder="User mới" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm">
+                <input type="text" id="admin-new-pass" placeholder="Mật khẩu" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm">
+                <button onclick="adminPanel.addUser()" class="bg-brand-600 text-white font-bold rounded-xl text-sm hover:bg-brand-700">Thêm User</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto no-scrollbar border rounded-2xl border-slate-100">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs sticky top-0">
+                        <tr>
+                            <th class="p-4">User</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4">Usage</th>
+                            <th class="p-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-user-list" class="divide-y divide-slate-100">
+                        <!-- User list render here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTEXT MODAL -->
+    <div id="modal-context" class="fixed inset-0 z-[60] hidden bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6 transition-opacity duration-300">
+        <div class="bg-white w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] p-6 shadow-2xl transform translate-y-full transition-transform duration-300 max-h-[85vh] flex flex-col" id="modal-context-content">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0"></div>
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h3 class="text-lg font-bold text-slate-800">Chọn nội dung Chat</h3>
+                <button onclick="app.toggleContextModal(false)" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="context-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[110] flex flex-col items-center gap-2 pointer-events-none"></div>
+  <!-- READER MODAL (Dùng để đọc văn bản full màn hình) -->
+    <div id="modal-reader" class="fixed inset-0 z-[90] hidden bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6 transition-opacity duration-300">
+        <div class="bg-white w-full h-[95vh] sm:h-[85vh] sm:max-w-2xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col" id="modal-reader-content">
+            
+            <!-- Header của Modal -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-md rounded-t-[32px] sticky top-0 z-10">
+                <div class="min-w-0 pr-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nội dung chi tiết</p>
+                    <h3 id="reader-title" class="text-base font-bold text-slate-800 truncate">Tiêu đề bài viết</h3>
+                </div>
+                <button onclick="app.closeReader()" class="w-9 h-9 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-colors shrink-0">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Nội dung bài đọc (Đã tối ưu typography cho dễ đọc) -->
+            <div class="flex-1 overflow-y-auto p-6" id="reader-scroll-area">
+                <div id="reader-body" class="prose prose-slate prose-p:text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-900 prose-a:text-brand-600 max-w-none text-base leading-loose font-medium">
+                    <!-- Nội dung sẽ được render vào đây -->
+                </div>
+                <!-- Khoảng trống dưới cùng để không bị cấn -->
+                <div class="h-20"></div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-[32px] flex gap-3 shrink-0">
+                <button onclick="app.copyReaderContent()" class="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Sao chép
+                </button>
+                <button onclick="app.chatFromReader()" class="flex-1 bg-brand-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-brand-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i> Chat ngay
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+
+// =========================================================================
+// BẮT ĐẦU CODE JAVASCRIPT MỚI - SAO CHÉP TẤT CẢ TỪ ĐÂY
+// =========================================================================
+const API_URL = "http://reader-prior.gl.at.ply.gg:35687/api";
+const X_API_KEY = "sk-g6AKdiycg77Vds1Tg2HBf34C";
+
+// --- KHỞI TẠO SUPABASE (ĐÃ SỬA LỖI) ---
+const SUPABASE_URL = 'https://hdtfgjtokkxlbphjkocx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkdGZnanRva2t4bGJwaGprb2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2NzY3NTYsImV4cCI6MjA4MDI1Mjc1Nn0.ezzr8kKPog94eh8K7wBvsdVXIM7GjcOfXg_7vhBZU-k';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const KEY_STORAGE = "gemini_key_secure";
+
+/* ================== AUTH SYSTEM ================== */
+class Auth {
+    constructor() {
+        this.currentUser = JSON.parse(sessionStorage.getItem('current_user')) || null;
+        this.checkSession();
+        document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); this.login(); });
+        document.getElementById('register-form').addEventListener('submit', (e) => { e.preventDefault(); this.register(); });
+    }
+    sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    toggleView(view) {
+        const loginForm = document.getElementById('login-form');
+        const regForm = document.getElementById('register-form');
+        if (view === 'register') {
+            loginForm.classList.add('hidden');
+            regForm.classList.remove('hidden');
+        } else {
+            regForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        }
+    }
+    async login() {
+        const u = document.getElementById('login-user').value.trim();
+        const p = document.getElementById('login-pass').value.trim();
+        if (!u || !p) return app.showToast('Vui lòng điền đủ thông tin', 'error');
+        const { data: user, error } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', u)
+            .eq('password', p)
+            .single();
+        if (error || !user) {
+            console.error("Login error:", error);
+            app.showToast('Sai tài khoản hoặc mật khẩu', 'error');
+            return;
+        }
+        this.currentUser = user;
+        sessionStorage.setItem('current_user', JSON.stringify(user));
+        this.checkSession();
+        await app.loadDataFromSupabase();
+        app.showToast(`Xin chào ${user.username}!`, 'success');
+    }
+    async register() {
+        const u = document.getElementById('reg-user').value.trim();
+        const p = document.getElementById('reg-pass').value.trim();
+        if (!u || !p) return app.showToast('Vui lòng điền đủ thông tin', 'error');
+        const { data, error } = await supabaseClient
+            .from('users')
+            .insert([{
+                username: u,
+                password: p,
+                role: 'user',
+                usage_limit: 5,
+                current_usage: 0
+            }]);
+        if (error) {
+            console.error("Register error:", error);
+            return app.showToast('Lỗi: Tên đăng nhập đã tồn tại', 'error');
+        }
+        app.showToast('Đăng ký thành công! Hãy đăng nhập', 'success');
+        this.toggleView('login');
+        document.getElementById('login-user').value = u;
+        document.getElementById('login-pass').value = '';
+    }
+    logout() {
+        sessionStorage.removeItem('current_user');
+        this.currentUser = null;
+        window.location.reload();
+    }
+async checkSession() {
+    const authScreen = document.getElementById('auth-screen');
+    const appContainer = document.getElementById('app-container');
+
+    if (this.currentUser) {
+        // Nếu đã đăng nhập, hiện giao diện chính
+        authScreen.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+
+        // QUAN TRỌNG: Gọi cả hai hàm để làm mới UI và tải dữ liệu
+        await this.updateUI(); // Cập nhật thông tin user (số lượt dùng,...)
+        await app.loadDataFromSupabase(); // Tải danh sách công việc đang xử lý và lịch sử
+
+    } else {
+        // Nếu chưa đăng nhập, hiện màn hình đăng nhập
+        authScreen.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+    }
+}
+
+    async updateUI() {
+    if (!this.currentUser) return;
+
+    // BƯỚC 1: Lấy dữ liệu mới nhất của user từ Supabase
+    const { data: freshUser, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('id', this.currentUser.id)
+        .single();
+
+    // Nếu có lỗi hoặc không tìm thấy user (ví dụ bị admin xóa), đăng xuất cho an toàn
+    if (error || !freshUser) {
+        console.error("Không thể làm mới thông tin người dùng:", error);
+        this.logout();
+        return;
+    }
+
+    // BƯỚC 2: Cập nhật lại đối tượng currentUser và sessionStorage bằng dữ liệu mới nhất
+    this.currentUser = freshUser;
+    sessionStorage.setItem('current_user', JSON.stringify(this.currentUser));
+
+    // BƯỚC 3: Cập nhật giao diện bằng dữ liệu đã được làm mới
+    document.getElementById('display-username').innerText = this.currentUser.username;
+    document.getElementById('display-role').innerText = this.currentUser.role;
+    document.getElementById('mobile-role').innerText = this.currentUser.role.toUpperCase();
+    document.getElementById('display-usage').innerText = this.currentUser.current_usage;
+    document.getElementById('display-limit').innerText = this.currentUser.usage_limit;
+
+    const isAdmin = this.currentUser.role === 'admin';
+    document.getElementById('sidebar-admin').classList.toggle('hidden', !isAdmin);
+    document.getElementById('tab-admin').classList.toggle('hidden', !isAdmin);
+}
+
+    async incrementUsage() {
+        if (!this.currentUser) return false;
+        const { data: freshUser } = await supabaseClient.from('users').select('*').eq('id', this.currentUser.id).single();
+        if (freshUser) this.currentUser = freshUser;
+        if (this.currentUser.role !== 'admin' && this.currentUser.current_usage >= this.currentUser.usage_limit) {
+            app.showToast(`Bạn đã hết lượt dùng (${this.currentUser.usage_limit}). Liên hệ Admin.`, 'error');
+            return false;
+        }
+        const { error } = await supabaseClient.rpc('increment_usage', { user_id_input: this.currentUser.id });
+        if (error) {
+            console.error('Lỗi tăng lượt dùng:', error);
+            return false;
+        }
+        this.currentUser.current_usage += 1;
+        this.updateUI();
+        return true;
+    }
+}
+/* ================== ADMIN PANEL ================== */
+class AdminPanel {
+    open() {
+        if (auth.currentUser?.role !== 'admin') return;
+        document.getElementById('modal-admin').classList.remove('hidden');
+        this.renderUsers();
+    }
+    close() { document.getElementById('modal-admin').classList.add('hidden'); }
+    async renderUsers() {
+        const { data: users, error } = await supabaseClient.from('users').select('*').order('created_at');
+        if (error) { console.error("Lỗi tải danh sách user:", error); return; }
+        const tbody = document.getElementById('admin-user-list');
+        tbody.innerHTML = users.map(u => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-4 font-bold text-slate-700">${u.username}</td>
+                <td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold ${u.role === 'admin' ? 'text-purple-600' : 'text-slate-500'}">${u.role}</span></td>
+                <td class="p-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500">${u.current_usage} /</span>
+                        <input type="number" value="${u.usage_limit}" onchange="adminPanel.updateLimit('${u.id}', this.value)" class="w-16 border rounded px-1 py-0.5 text-sm">
+                    </div>
+                </td>
+                <td class="p-4 text-right">
+                    ${u.username !== 'admin' ? `<button onclick="adminPanel.deleteUser('${u.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
+    }
+    async addUser() {
+        const u = document.getElementById('admin-new-user').value.trim();
+        const p = document.getElementById('admin-new-pass').value.trim();
+        if (!u || !p) return alert('Nhập đủ thông tin');
+        const { error } = await supabaseClient.from('users').insert({ username: u, password: p, role: 'user', usage_limit: 5 });
+        if (error) { console.error("Lỗi thêm user:", error); return alert('Lỗi: Tên người dùng có thể đã tồn tại.'); }
+        await this.renderUsers();
+        document.getElementById('admin-new-user').value = ''; document.getElementById('admin-new-pass').value = '';
+        app.showToast('Đã thêm user mới', 'success');
+    }
+    async deleteUser(id) {
+        if (!confirm('Xóa user này? Thao tác này sẽ xóa cả lịch sử của họ.')) return;
+        const { error } = await supabaseClient.from('users').delete().eq('id', id);
+        if (error) { console.error("Lỗi xóa user:", error); return alert('Xóa user thất bại.'); }
+        await this.renderUsers();
+        app.showToast('Đã xóa user', 'success');
+    }
+    async updateLimit(id, val) {
+        const limit = parseInt(val);
+        if (isNaN(limit)) return;
+        const { error } = await supabaseClient.from('users').update({ usage_limit: limit }).eq('id', id);
+        if (error) { console.error("Lỗi cập nhật limit:", error); return app.showToast('Cập nhật thất bại', 'error'); }
+        app.showToast('Đã cập nhật giới hạn', 'success');
+    }
+}
+/* ================== MAIN APP LOGIC ================== */
+class App {
+    constructor() {
+        this.db = [];
+        this.apiKey = localStorage.getItem(KEY_STORAGE) || '';
+        this.currentTab = 'home';
+        this.expandedFolders = new Set();
+        this.activeIntervals = {};
+        this.selectedContextIds = new Set();
+        this.historyViewMode = 'list';
+        this.currentReaderId = null;
+        this.init();
+    }
+    sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    init() {
+        lucide.createIcons();
+        if (this.apiKey) document.getElementById('api-key-input').value = this.apiKey;
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && window.innerWidth >= 768) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+    }
+    async loadDataFromSupabase() {
+        if (!auth.currentUser) return;
+        const { data, error } = await supabaseClient.from('history').select('*').eq('user_id', auth.currentUser.id).order('created_at', { ascending: false });
+        if (error) { console.error("Lỗi tải lịch sử:", error); app.showToast('Không thể tải lịch sử', 'error'); return; }
+        this.db = data;
+        this.renderHistory();
+        this.renderQueue();
+        this.resumeWork();
+        this.updateBadge();
+    }
+    
+    updateBadge() {
+        const count = this.db.filter(t => t.status === 'success').length;
+        const badge = document.getElementById('badge-count');
+        if (badge) { badge.innerText = count; badge.classList.toggle('hidden', count === 0); }
+    }
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        const bgClass = type === 'error' ? 'bg-red-500' : (type === 'success' ? 'bg-green-500' : 'bg-slate-800');
+        const icon = type === 'error' ? 'alert-circle' : (type === 'success' ? 'check-circle' : 'info');
+        el.className = `${bgClass} text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-bold animate-fade-in pointer-events-auto border border-white/10`;
+        el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> ${message}`;
+        container.appendChild(el);
+        lucide.createIcons();
+        setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+    }
+async switchTab(tabId) {
+    this.currentTab = tabId;
+
+    // 1. Cập nhật giao diện Tab (UI)
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const newView = document.getElementById(`view-${tabId}`);
+    if (newView) requestAnimationFrame(() => newView.classList.add('active'));
+
+    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    const sbItem = document.getElementById(`sidebar-${tabId}`);
+    if (sbItem) sbItem.classList.add('active');
+
+    // Cập nhật menu mobile
+    document.querySelectorAll('.md\\:hidden nav button').forEach(el => el.classList.replace('text-brand-600', 'text-slate-400'));
+    const mbItem = document.getElementById(`tab-${tabId}`);
+    if (mbItem) mbItem.classList.replace('text-slate-400', 'text-brand-600');
+
+    // 2. LOGIC LOAD DỮ LIỆU TỪ API
+    if (tabId === 'history') {
+        // Hiện skeleton hoặc loading trong lúc chờ API
+        const listContainer = document.getElementById('history-list');
+        if(listContainer) {
+            listContainer.innerHTML = `
+                <div class="space-y-4 animate-pulse">
+                    <div class="h-12 bg-slate-200 rounded-xl w-full"></div>
+                    <div class="h-12 bg-slate-200 rounded-xl w-full"></div>
+                    <div class="h-12 bg-slate-200 rounded-xl w-full"></div>
+                </div>`;
+        }
+        
+        // Gọi API lấy dữ liệu mới nhất
+        await this.loadDataFromSupabase(); 
+    }
+}
+ async startQueue() {
+        if (!await auth.incrementUsage()) return;
+        const input = document.getElementById('url-input');
+        const folderInput = document.getElementById('folder-input');
+        const folderName = folderInput ? (folderInput.value.trim() || 'Chưa phân loại') : 'Chưa phân loại';
+        const raw = input.value.trim();
+        if (!raw) return this.showToast('Vui lòng nhập đường dẫn!', 'error');
+        const urls = raw.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+        const newUrls = urls.filter(url => !this.db.some(t => t.url === url && t.status === 'success'));
+        if (newUrls.length === 0) {
+            input.value = '';
+            return this.showToast('Tất cả link đã được xử lý thành công hoặc rỗng', 'info');
+        }
+        const tasksToInsert = newUrls.map(url => ({ user_id: auth.currentUser.id, url: url, folder: folderName, status: 'queue', title: 'Đang xếp hàng...', api_task_id: 'temp-' + Date.now() + Math.random().toString(36).substr(2, 5) }));
+        const { data: newTasks, error } = await supabaseClient.from('history').insert(tasksToInsert).select();
+        if (error) { console.error("Lỗi thêm nhiệm vụ:", error); return this.showToast('Lỗi khi thêm nhiệm vụ', 'error'); }
+        this.db.unshift(...newTasks);
+        this.renderQueue();
+        input.value = '';
+        this.showToast(`Đã thêm ${newTasks.length} nhiệm vụ. Bắt đầu xử lý tuần tự...`, 'success');
+        for (const task of newTasks) {
+            const currentTaskInDb = this.db.find(t => t.id === task.id);
+            if (currentTaskInDb && currentTaskInDb.status === 'queue') {
+                this.showToast(`Bắt đầu xử lý: ${task.url.substring(0, 30)}...`, 'info');
+                await this.processTask(task);
+                const remainingTasks = newTasks.slice(newTasks.indexOf(task) + 1);
+                if (remainingTasks.length > 0) {
+                    this.showToast(`Đợi một chút trước khi xử lý link tiếp theo...`, 'info');
+                    await this.sleep(5000);
+                }
+            }
+        }
+        this.showToast('Đã xử lý xong tất cả các link trong hàng đợi!', 'success');
+    }
+    startProgressSimulation(taskId) {
+        if (this.activeIntervals[taskId]) clearInterval(this.activeIntervals[taskId]);
+        let currentPercent = 0; const updateRate = 100;
+        this.activeIntervals[taskId] = setInterval(() => {
+            let increment = (currentPercent < 60) ? (Math.random() * 2 + 1) : ((Math.random() * 0.04) + 0.001);
+            currentPercent += increment;
+            if (currentPercent > 99.99) currentPercent = 99.99;
+            const percentEl = document.getElementById(`prog-val-${taskId}`);
+            const barEl = document.getElementById(`prog-bar-${taskId}`);
+            if (percentEl && barEl) { const displayVal = currentPercent.toFixed(2) + '%'; percentEl.innerText = displayVal; barEl.style.width = displayVal; }
+        }, updateRate);
+    }
+    stopProgressSimulation(taskId) { if (this.activeIntervals[taskId]) { clearInterval(this.activeIntervals[taskId]); delete this.activeIntervals[taskId]; } }
+    async processTask(task) {
+        // Cập nhật trạng thái đang gửi request
+        await this.updateTask(task.id, { status: 'processing', title: 'Đang xử lý...' });
+        
+        try {
+            const res = await fetch(`${API_URL}/convert`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': X_API_KEY }, body: JSON.stringify({ url: task.url }) });
+            const data = await res.json();
+            
+            if (data.task_id) {
+                // Có Task ID -> Lưu lại và bắt đầu Poll tiến độ thật
+                await this.replaceTaskId(task.api_task_id, data.task_id);
+                this.pollTask(data.task_id);
+            } else {
+                throw new Error(data.error || 'API Error');
+            }
+        } catch (e) {
+            await this.updateTask(task.id, { status: 'error', title: 'Lỗi: ' + e.message });
+        }
+    }
+
+    async replaceTaskId(oldId, newId) {
+        const { error } = await supabaseClient.from('history').update({ api_task_id: newId }).eq('api_task_id', oldId);
+        if (error) console.error("Lỗi thay thế ID task:", error);
+        const idx = this.db.findIndex(t => t.api_task_id === oldId);
+        if (idx !== -1) { this.db[idx].api_task_id = newId; }
+    }
+    async pollTask(taskId) {
+        const task = this.db.find(t => t.api_task_id === taskId);
+        if (!task || task.status === 'success') return;
+
+        try {
+            const res = await fetch(`${API_URL}/result/${taskId}`, { headers: { 'x-api-key': X_API_KEY } });
+            const data = await res.json();
+
+            // 1. TRƯỜNG HỢP ĐANG CHẠY (PROCESSING)
+            if (data.status === 'processing') {
+                // --- XỬ LÝ PROGRESS (Lấy %) ---
+                const percent = Math.round(data.progress || 0);
+
+                // --- XỬ LÝ STEP (Lấy bước chạy) ---
+                // data.step: "downloading_audio" -> "Downloading audio"
+                let stepRaw = data.step || 'Processing';
+                let stepDisplay = stepRaw.replace(/_/g, ' '); // Bỏ dấu gạch dưới
+                stepDisplay = stepDisplay.charAt(0).toUpperCase() + stepDisplay.slice(1); // Viết hoa chữ đầu
+
+                // --- XỬ LÝ CHUNKS (Nếu có chia đoạn) ---
+                if (data.total_chunks && data.total_chunks > 1) {
+                    const current = data.current_chunk || 0; 
+                    stepDisplay += ` (${current}/${data.total_chunks})`;
+                }
+
+                // --- CẬP NHẬT GIAO DIỆN ---
+                const percentEl = document.getElementById(`prog-val-${taskId}`);
+                const stepEl = document.getElementById(`step-text-${taskId}`); // Element dòng dưới
+                const barEl = document.getElementById(`prog-bar-${taskId}`);
+
+                if (percentEl) percentEl.innerText = `${percent}%`;
+                if (stepEl) stepEl.innerText = stepDisplay; // Hiển thị step: "Downloading audio"
+                if (barEl) barEl.style.width = `${percent}%`;
+
+                // Tiếp tục hỏi server sau 2s
+                setTimeout(() => this.pollTask(taskId), 2000);
+            } 
+            
+            // 2. HOÀN THÀNH
+            else if (data.status === 'success' && data.result) {
+                await this.updateTask(task.id, { 
+                    status: 'success', 
+                    title: data.result.title_vi || data.result.title, 
+                    transcript: data.result.transcript_vi || data.result.transcript, 
+                });
+                this.showToast(`Hoàn thành: ${(data.result.title || '').substring(0, 15)}...`, 'success');
+                this.updateBadge();
+            } 
+            
+            // 3. LỖI
+            else if (data.status === 'error') {
+                 await this.updateTask(task.id, { status: 'error', title: 'Lỗi: ' + (data.error || 'Unknown') });
+            } 
+            
+            // CHỜ ĐỢI KHÁC
+            else {
+                setTimeout(() => this.pollTask(taskId), 3000);
+            }
+        } catch (e) { 
+            setTimeout(() => this.pollTask(taskId), 5000); 
+        }
+    }
+
+    resumeWork() { this.db.forEach(t => { if (t.status === 'processing' && t.api_task_id) { if (t.api_task_id.startsWith('temp-')) this.processTask(t); else this.pollTask(t.api_task_id); } }); }
+    async updateTask(db_id, fields) {
+        const { error } = await supabaseClient.from('history').update(fields).eq('id', db_id);
+        if (error) console.error("Lỗi cập nhật task:", error);
+        const idx = this.db.findIndex(t => t.id === db_id);
+        if (idx !== -1) {
+            this.db[idx] = { ...this.db[idx], ...fields };
+            if (this.currentTab === 'home') this.renderQueue();
+            if (this.currentTab === 'history') this.renderHistory();
+        }
+    }
+    async deleteTask(id) {
+        if (confirm('Xóa mục này?')) {
+            const taskToDelete = this.db.find(t => t.id === id);
+            if (taskToDelete && taskToDelete.api_task_id) this.stopProgressSimulation(taskToDelete.api_task_id);
+            const { error } = await supabaseClient.from('history').delete().eq('id', id);
+            if (error) return this.showToast('Lỗi khi xóa', 'error');
+            this.db = this.db.filter(t => t.id !== id);
+            this.renderQueue(); this.renderHistory(); this.updateBadge();
+            this.showToast('Đã xóa thành công', 'success');
+        }
+    }
+renderQueue() {
+        const list = document.getElementById('queue-list');
+        // Lấy danh sách các task đang chạy hoặc chờ
+        const queue = this.db.filter(t => t.status !== 'success' && t.status !== 'folder_placeholder');
+
+        document.getElementById('queue-count').innerText = `${queue.length} task`;
+        
+        if (queue.length === 0) { 
+            list.innerHTML = '<div class="text-center text-slate-300 py-8 border-2 border-dashed rounded-xl">Không có tác vụ</div>'; 
+            return; 
+        }
+        
+        // Sử dụng cấu trúc HTML bạn yêu cầu
+        list.innerHTML = queue.map(t => `
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 animate-slide-up group">
+                <div class="flex items-start gap-3">
+                    <!-- ICON LOADING -->
+                    <div class="w-10 h-10 rounded-xl ${t.status === 'error' ? 'bg-red-50 text-red-500' : 'bg-brand-50 text-brand-600'} flex items-center justify-center shrink-0">
+                        <i data-lucide="${t.status === 'error' ? 'alert-triangle' : 'loader-2'}" class="w-5 h-5 ${t.status !== 'error' ? 'animate-spin' : ''}"></i>
+                    </div>
+
+                    <!-- NỘI DUNG CHÍNH (Chia 2 bên) -->
+                    <div class="flex-1 min-w-0 flex justify-between gap-2">
+                        
+                        <!-- BÊN TRÁI: Tên & Link -->
+                        <div class="overflow-hidden pr-2">
+                            <h4 class="text-sm font-bold text-slate-800 truncate">${t.title}</h4>
+                            <p class="text-[10px] text-slate-400 truncate mt-0.5">${t.url}</p>
+                        </div>
+
+                        <!-- BÊN PHẢI: Phần trăm & Step -->
+                        <div class="flex flex-col items-end shrink-0 min-w-[90px]">
+                            <!-- Số % (Lấy từ progress) -->
+                            <span id="prog-val-${t.api_task_id}" class="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md mb-1">Waiting...</span>
+                            
+                            <!-- Dòng Step (Lấy từ step) -->
+                            <span id="step-text-${t.api_task_id}" class="text-[10px] font-bold text-slate-500 capitalize text-right truncate w-full">In Queue</span>
+                        </div>
+                    </div>
+
+                    <!-- Nút Xóa -->
+                    <button onclick="app.deleteTask('${t.id}')" class="p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                
+                <!-- THANH PROGRESS BAR -->
+                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="prog-bar-${t.api_task_id}" class="h-full bg-gradient-to-r from-brand-500 to-pink-500 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                </div>
+            </div>`).join('');
+            
+        lucide.createIcons();
+    }
+
+    toggleSettings() { document.getElementById('modal-settings').classList.toggle('hidden'); }
+    saveSettings() { const key = document.getElementById('api-key-input').value; if (key) { this.apiKey = key; localStorage.setItem(KEY_STORAGE, key); this.toggleSettings(); this.showToast('Đã lưu Key', 'success'); } }
+    toggleChatDropdown() {
+        const wrapper = document.getElementById('chat-dropdown-wrapper');
+        const icon = document.getElementById('dropdown-icon');
+        const input = document.getElementById('context-search-input');
+        const footerCount = document.getElementById('footer-count');
+        if (!wrapper) return;
+        const isHidden = wrapper.classList.contains('hidden');
+        if (isHidden) {
+            this.renderDropdownItems();
+            wrapper.classList.remove('hidden');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+            if (input) setTimeout(() => input.focus(), 100);
+            if (footerCount) footerCount.innerText = this.selectedContextIds.size;
+        } else {
+            wrapper.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+            if (input) input.value = '';
+            this.updateDropdownLabel();
+        }
+    }
+async deleteFolder(folderName, event) {
+    if (event) event.stopPropagation();
+
+    // 1. Xác định các item cần xóa
+    const itemsInFolder = this.db.filter(item => (item.folder || 'Chưa phân loại') === folderName);
+    const videoCount = itemsInFolder.filter(item => item.status === 'success').length;
+
+    // 2. Cảnh báo người dùng
+    let confirmMsg = `Bạn muốn xóa thư mục "${folderName}"?`;
+    if (videoCount > 0) {
+        confirmMsg += `\n\nCẢNH BÁO: ${videoCount} video trong thư mục này cũng sẽ bị xóa vĩnh viễn!`;
+    }
+    if (!confirm(confirmMsg)) return;
+
+    // 3. XÓA TRÊN API
+    // Lấy danh sách ID cần xóa
+    const idsToDelete = itemsInFolder.map(item => item.id);
+
+    if (idsToDelete.length > 0) {
+        const { error } = await supabaseClient
+            .from('history')
+            .delete()
+            .in('id', idsToDelete);
+
+        if (error) {
+            console.error("Lỗi API xóa folder:", error);
+            return this.showToast('Lỗi server: Không xóa được thư mục.', 'error');
+        }
+
+        // 4. Cập nhật local DB (loại bỏ các item đã xóa)
+        this.db = this.db.filter(item => !idsToDelete.includes(item.id));
+        
+        this.showToast('Đã xóa thư mục thành công', 'success');
+        
+        // Vẽ lại giao diện
+        if (this.historyViewMode === 'kanban') {
+            this.renderKanban();
+        } else {
+            this.renderHistory();
+        }
+    }
+}
+
+    chatWithFolder(folderName, event) {
+        if (event) event.stopPropagation();
+        const items = this.db.filter(t => t.status === 'success' && (t.folder || 'Chưa phân loại') === folderName);
+        if (items.length === 0) return this.showToast('Thư mục này trống!', 'error');
+        this.selectedContextIds.clear();
+        items.forEach(t => this.selectedContextIds.add(t.id));
+        this.updateDropdownLabel();
+        this.switchTab('chat');
+        this.showToast(`Đã chọn ${items.length} video từ "${folderName}" để chat`, 'success');
+    }
+    toggleFolderSelection(folderName, event) {
+        if (event) event.stopPropagation();
+        this.expandedFolders.add(folderName);
+        const items = this.db.filter(t => t.status === 'success' && (t.folder || 'Chưa phân loại') === folderName);
+        const allSelected = items.every(t => this.selectedContextIds.has(t.id));
+        if (allSelected) items.forEach(t => this.selectedContextIds.delete(t.id)); else items.forEach(t => this.selectedContextIds.add(t.id));
+        const searchVal = document.getElementById('context-search-input')?.value || '';
+        this.renderDropdownItems(searchVal);
+        this.updateFooterCount();
+    }
+    toggleHistoryView() {
+        this.historyViewMode = this.historyViewMode === 'list' ? 'kanban' : 'list';
+        const btnIcon = document.getElementById('view-icon');
+        const listContainer = document.getElementById('history-list-container');
+        const kanbanContainer = document.getElementById('kanban-board');
+        if (this.historyViewMode === 'kanban') {
+            btnIcon.setAttribute('data-lucide', 'list');
+            listContainer.classList.add('hidden'); kanbanContainer.classList.remove('hidden'); this.renderKanban();
+        } else {
+            btnIcon.setAttribute('data-lucide', 'kanban-square');
+            listContainer.classList.remove('hidden'); kanbanContainer.classList.add('hidden'); this.renderHistory();
+        }
+        lucide.createIcons();
+    }
+renderKanban() {
+    const container = document.getElementById('kanban-columns');
+    
+    // Lấy tất cả item để xác định danh sách folder
+    const allItems = this.db.filter(t => t.status !== 'queue' && t.status !== 'processing');
+    
+    // Lấy danh sách tên folder duy nhất
+    const folders = new Set(allItems.map(t => t.folder || 'Chưa phân loại'));
+    const folderList = Array.from(folders).sort((a, b) => {
+        if(a === 'Chưa phân loại') return -1;
+        if(b === 'Chưa phân loại') return 1;
+        return a.localeCompare(b);
+    });
+    
+    // Đảm bảo luôn có folder "Chưa phân loại" nếu chưa có trong list
+    if (!folders.has('Chưa phân loại')) folderList.unshift('Chưa phân loại');
+
+    let html = '';
+
+    folderList.forEach(folder => {
+        // Lấy video thực tế trong folder này (bỏ qua placeholder)
+        const items = this.db.filter(t => t.status === 'success' && (t.folder || 'Chưa phân loại') === folder);
+        const safeFolder = folder.replace(/'/g, "\\'");
+        
+        html += `
+        <div 
+            class="kanban-column flex flex-col w-[300px] h-full bg-slate-100/80 backdrop-blur-sm rounded-2xl border-2 border-transparent transition-all duration-200 group/col"
+            ondragover="app.handleDragOver(event)"
+            ondragleave="app.handleDragLeave(event)"
+            ondrop="app.handleDrop(event, '${safeFolder}')"
+        >
+            <!-- Header Cột -->
+            <div class="p-4 flex justify-between items-center bg-white/60 rounded-t-2xl border-b border-slate-200/60 shadow-sm shrink-0">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="w-2 h-2 rounded-full ${items.length > 0 ? 'bg-brand-500' : 'bg-slate-300'}"></div>
+                    <h3 class="font-bold text-slate-700 truncate text-sm" title="${folder}">${folder}</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold bg-white px-2 py-1 rounded-lg text-slate-500 border border-slate-100">${items.length}</span>
+                    ${folder !== 'Chưa phân loại' ? `
+                    <button onclick="app.deleteFolder('${safeFolder}', event)" title="Xóa cột này" class="text-slate-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    `: ''}
+                </div>
+            </div>
+
+            <!-- Body Cột (Danh sách thẻ) -->
+            <div class="kanban-column-body flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+                ${items.map(t => `
+                    <div 
+                        draggable="true"
+                        ondragstart="app.handleDragStart(event, '${t.id}')"
+                        ondragend="app.handleDragEnd(event)"
+                        class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md hover:border-brand-300 hover:-translate-y-1 transition-all group relative select-none"
+                    >
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500">VIDEO</span>
+                            <button onclick="app.setChatContext('${t.id}')" class="text-brand-600 hover:bg-brand-50 p-1 rounded-md transition-colors"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-3 leading-relaxed mb-2">${t.title}</h4>
+                        <div class="flex items-center justify-between border-t border-slate-50 pt-2">
+                            <span class="text-[10px] text-slate-400 font-mono">${new Date(t.created_at).toLocaleDateString()}</span>
+                            <i data-lucide="grip-horizontal" class="w-4 h-4 text-slate-200"></i>
+                        </div>
+                    </div>
+                `).join('')}
+                
+                ${items.length === 0 ? `
+                    <div class="h-32 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-300 gap-2 opacity-60">
+                        <i data-lucide="ghost" class="w-6 h-6"></i>
+                        <span class="text-xs font-medium">Thả video vào đây</span>
+                    </div>` : ''}
+            </div>
+        </div>`;
+    });
+
+    // Nút thêm cột mới ở cuối
+    html += `
+        <div onclick="app.addNewFolder()" class="w-[300px] h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-2xl flex items-center justify-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 text-slate-400 hover:text-brand-600 transition-all opacity-70 hover:opacity-100 bg-white/50">
+            <span class="font-bold text-sm flex items-center gap-2"><i data-lucide="plus-circle" class="w-5 h-5"></i> Thêm Thư mục</span>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    lucide.createIcons();
+}
+
+    handleDragStart(e, taskId) { e.dataTransfer.setData("text/plain", taskId); e.dataTransfer.effectAllowed = "move"; e.target.style.opacity = '0.4'; e.target.classList.add('rotate-3'); }
+    handleDragEnd(e) { e.target.style.opacity = '1'; e.target.classList.remove('rotate-3'); document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('bg-brand-50', 'border-brand-300', 'ring-2', 'ring-brand-200')); }
+    handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; const col = e.currentTarget; if (!col.classList.contains('bg-brand-50')) col.classList.add('bg-brand-50', 'border-brand-300', 'ring-2', 'ring-brand-200'); }
+    handleDragLeave(e) { e.currentTarget.classList.remove('bg-brand-50', 'border-brand-300', 'ring-2', 'ring-brand-200'); }
+    async handleDrop(e, targetFolder) {
+        e.preventDefault(); e.currentTarget.classList.remove('bg-brand-50', 'border-brand-300', 'ring-2', 'ring-brand-200');
+        const taskId = e.dataTransfer.getData("text/plain");
+        const taskIndex = this.db.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+            const currentFolder = this.db[taskIndex].folder || 'Chưa phân loại';
+            if (currentFolder !== targetFolder) {
+                await this.updateTask(taskId, { folder: targetFolder }); this.renderKanban();
+                this.showToast(`Đã chuyển sang: ${targetFolder}`, 'success');
+            }
+        }
+    }
+async addNewFolder() {
+    // 1. Nhập tên thư mục
+    const name = prompt("Đặt tên cho Thư mục / Dự án mới:", "");
+    if (!name || name.trim() === "") return;
+    const folderName = name.trim();
+
+    // 2. Kiểm tra trùng lặp ở local trước cho nhanh
+    const folderExists = this.db.some(item => (item.folder || 'Chưa phân loại') === folderName);
+    if (folderExists) {
+        return this.showToast(`Thư mục "${folderName}" đã tồn tại!`, 'error');
+    }
+
+    // 3. TẠO FOLDER TRÊN API (Tạo bản ghi placeholder)
+    // status: 'folder_placeholder' giúp ta lọc nó ra khỏi danh sách video, nhưng vẫn hiện được folder
+    const placeholder = {
+        user_id: auth.currentUser.id,
+        folder: folderName,
+        status: 'folder_placeholder', 
+        url: `internal://folder/${Date.now()}`, // URL giả để không bị lỗi not null
+        title: `System Folder: ${folderName}`
+    };
+
+    const { data: newData, error } = await supabaseClient
+        .from('history')
+        .insert(placeholder)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Lỗi API tạo folder:", error);
+        return this.showToast('Lỗi: Không thể tạo thư mục trên hệ thống.', 'error');
+    }
+
+    // 4. Cập nhật dữ liệu local và vẽ lại giao diện
+    this.db.unshift(newData); // Thêm vào đầu danh sách
+    
+    this.showToast(`Đã tạo thư mục "${folderName}"`, 'success');
+    
+    // Refresh lại giao diện đúng theo chế độ đang xem
+    if (this.historyViewMode === 'kanban') {
+        this.renderKanban();
+    } else {
+        this.renderHistory();
+    }
+}
+renderHistory(keyword = '') {
+    if (this.historyViewMode === 'kanban') { this.renderKanban(); return; }
+
+    const list = document.getElementById('history-list');
+    
+    // Cập nhật gợi ý input (datalist) cho tab Home
+    const folderSet = new Set(this.db.map(t => t.folder || 'Chưa phân loại'));
+    const dataList = document.getElementById('folder-suggestions');
+    if(dataList) dataList.innerHTML = Array.from(folderSet).map(f => `<option value="${f}">`).join('');
+
+    // Lọc item để hiển thị (loại bỏ các task đang chạy ngầm hoặc placeholder khi search)
+    let displayItems = this.db.filter(t => t.status === 'success');
+    
+    // --- LOGIC TÌM KIẾM ---
+    if (keyword.trim()) {
+        const term = keyword.toLowerCase();
+        displayItems = displayItems.filter(t => 
+            (t.title && t.title.toLowerCase().includes(term)) || 
+            (t.url && t.url.toLowerCase().includes(term)) || 
+            (t.folder && t.folder.toLowerCase().includes(term))
+        );
+        
+        if (displayItems.length === 0) {
+            return list.innerHTML = `<div class="text-center text-slate-400 py-10">Không tìm thấy kết quả cho "<b>${keyword}</b>"</div>`;
+        }
+        // Khi search thì hiện dạng list phẳng, không group
+        list.innerHTML = `<div class="text-xs font-bold text-slate-400 mb-3 uppercase">Kết quả tìm kiếm (${displayItems.length})</div>` + this.renderHistoryCards(displayItems);
+        lucide.createIcons();
+        return;
+    }
+
+    // --- LOGIC HIỂN THỊ MẶC ĐỊNH (GOM NHÓM FOLDER) ---
+    // Lấy danh sách tất cả các item (kể cả placeholder) để biết có những folder nào
+    const allItems = this.db.filter(t => t.status !== 'queue' && t.status !== 'processing');
+    
+    if (allItems.length === 0) {
+        return list.innerHTML = '<div class="text-center text-slate-400 py-10 flex flex-col items-center gap-2"><i data-lucide="inbox" class="w-10 h-10 opacity-50"></i><span>Chưa có lịch sử</span></div>';
+    }
+
+    // Group items theo folder
+    const grouped = allItems.reduce((acc, t) => {
+        const f = (t.folder && t.folder.trim() !== '') ? t.folder : 'Chưa phân loại';
+        if (!acc[f]) acc[f] = [];
+        // Chỉ push vào mảng hiển thị nếu nó là video thành công (bỏ qua placeholder)
+        if (t.status === 'success') {
+            acc[f].push(t);
+        }
+        return acc;
+    }, {});
+
+    // Sắp xếp folder A-Z, Chưa phân loại lên đầu
+    const sortedFolders = Object.keys(grouped).sort((a, b) => { 
+        if(a === 'Chưa phân loại') return -1; 
+        if(b === 'Chưa phân loại') return 1; 
+        return a.localeCompare(b); 
+    });
+
+    // Tạo HTML
+    list.innerHTML = sortedFolders.map(folder => {
+        const videosInFolder = grouped[folder]; // Đây là mảng video thực
+        const count = videosInFolder.length;
+        
+        // Tạo ID an toàn cho HTML
+        const safeId = 'folder-' + btoa(unescape(encodeURIComponent(folder))).replace(/[^a-zA-Z0-9]/g, '');
+        const safeFolderName = folder.replace(/'/g, "\\'"); // Escape dấu nháy đơn cho JS
+
+        return `
+        <div class="mb-3 bg-white border border-slate-200 rounded-[20px] overflow-hidden shadow-sm animate-slide-up">
+            <!-- Header của Folder -->
+            <div class="w-full flex items-center justify-between p-3 bg-slate-50/80 hover:bg-slate-100 transition-colors group">
+                <div onclick="app.toggleFolderContent('${safeId}')" class="flex items-center gap-3 flex-1 cursor-pointer select-none">
+                    <div class="bg-brand-100 text-brand-600 p-1.5 rounded-lg shrink-0">
+                        <i data-lucide="folder" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="font-bold text-slate-700 text-sm truncate block">${folder}</span>
+                    </div>
+                    <span class="text-[10px] font-bold bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full shrink-0">${count} file</span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-1 pl-2">
+                    ${count > 0 ? `
+                    <button onclick="app.chatWithFolder('${safeFolderName}', event)" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-brand-200 text-brand-600 hover:bg-brand-50 hover:border-brand-300 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm" title="Chat với toàn bộ video trong folder này">
+                        <i data-lucide="messages-square" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">Chat</span>
+                    </button>` : ''}
+                    
+                    ${folder !== 'Chưa phân loại' ? `
+                    <button onclick="app.deleteFolder('${safeFolderName}', event)" title="Xóa thư mục" class="p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    ` : ''}
+
+                    <button onclick="app.toggleFolderContent('${safeId}')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/50 transition-colors">
+                        <i id="icon-${safeId}" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Nội dung Folder (List Video) -->
+            <div id="${safeId}" class="hidden border-t border-slate-100 p-2 sm:p-3 bg-slate-50/30 space-y-3">
+                ${count > 0 
+                    ? this.renderHistoryCards(videosInFolder) 
+                    : '<div class="text-center text-xs text-slate-400 py-6 italic opacity-70">Thư mục trống (Chưa có video)</div>'
+                }
+            </div>
+        </div>`;
+    }).join('');
+    
+    lucide.createIcons();
+}
+
+    renderHistoryCards(items) { return items.map(t => `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all relative group"><div class="flex gap-3"><div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div><div class="min-w-0 flex-1"><h4 class="text-sm font-bold text-slate-800 line-clamp-1 cursor-pointer hover:text-brand-600" onclick="app.setChatContext('${t.id}')">${t.title}</h4><p class="text-[10px] text-slate-400 mt-0.5 truncate">${t.url}</p></div></div><div class="mt-3 flex gap-2"><button onclick="app.setChatContext('${t.id}')" class="flex-1 py-2 bg-brand-50 text-brand-700 rounded-lg text-xs font-bold hover:bg-brand-100 flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-3 h-3"></i> Chat</button><button onclick="app.openReader('${t.id}')" class="flex-1 py-2 bg-sky-50 text-sky-700 rounded-lg text-xs font-bold hover:bg-sky-100 flex items-center justify-center gap-2"><i data-lucide="book-open" class="w-3 h-3"></i> Đọc</button><button onclick="app.deleteTask('${t.id}')" class="w-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join(''); }
+    toggleFolderContent(id) { const el = document.getElementById(id); const icon = document.getElementById('icon-' + id); if (!el) return; if (el.classList.contains('hidden')) { el.classList.remove('hidden'); if (icon) icon.style.transform = 'rotate(180deg)'; } else { el.classList.add('hidden'); if (icon) icon.style.transform = 'rotate(0deg)'; } }
+    openReader(id) {
+        const task = this.db.find(t => t.id === id); if (!task) return; this.currentReaderId = id; document.getElementById('reader-title').innerText = task.title; let content = task.transcript || "Chưa có nội dung."; let paragraphs = content.split(/\n+/);
+        let formattedHtml = paragraphs.map(p => { let text = p.trim(); if (text.length === 0) return ''; text = text.replace(/^([\w\sà-ỹÀ-Ỹ]{1,20}:)/g, '<strong class="text-slate-900">$1</strong>'); return `<p class="mb-6 text-justify leading-loose text-lg text-slate-700">${text}</p>`; }).join('');
+        document.getElementById('reader-body').innerHTML = formattedHtml; const modal = document.getElementById('modal-reader'); modal.classList.remove('hidden'); setTimeout(() => { document.getElementById('modal-reader-content').classList.remove('translate-y-full'); }, 10);
+    }
+    closeReader() { const content = document.getElementById('modal-reader-content'); content.classList.add('translate-y-full'); setTimeout(() => { document.getElementById('modal-reader').classList.add('hidden'); }, 300); }
+    copyReaderContent() { if (!this.currentReaderId) return; const task = this.db.find(t => t.id === this.currentReaderId); if (task && task.transcript) { navigator.clipboard.writeText(task.transcript); this.showToast('Đã sao chép toàn bộ văn bản', 'success'); } }
+    chatFromReader() { if (!this.currentReaderId) return; this.closeReader(); setTimeout(() => { this.setChatContext(this.currentReaderId); }, 300); }
+    toggleContextSelection(id, event) { if (event) event.stopPropagation(); if (this.selectedContextIds.has(id)) this.selectedContextIds.delete(id); else this.selectedContextIds.add(id); const searchVal = document.getElementById('context-search-input')?.value || ''; this.renderDropdownItems(searchVal); this.updateFooterCount(); }
+    updateFooterCount() { const el = document.getElementById('footer-count'); if (el) el.innerText = this.selectedContextIds.size; this.updateDropdownLabel(); }
+    renderDropdownItems(filterText = '') {
+        const listContainer = document.getElementById('chat-dropdown-list'); let history = this.db.filter(t => t.status === 'success');
+        if (history.length === 0) { listContainer.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">Chưa có video nào trong lịch sử</div>`; return; }
+        if (filterText) { const lower = filterText.toLowerCase(); history = history.filter(t => (t.title && t.title.toLowerCase().includes(lower)) || (t.folder && t.folder.toLowerCase().includes(lower))); listContainer.innerHTML = history.map(t => this.renderItemRow(t)).join(''); lucide.createIcons(); return; }
+        const grouped = history.reduce((acc, t) => { const f = (t.folder && t.folder.trim() !== '') ? t.folder : 'Chưa phân loại'; if (!acc[f]) acc[f] = []; acc[f].push(t); return acc; }, {});
+        let html = ''; const sortedFolders = Object.keys(grouped).sort((a, b) => { if (a === 'Chưa phân loại') return 1; if (b === 'Chưa phân loại') return -1; return a.localeCompare(b); });
+        for (const folder of sortedFolders) { const items = grouped[folder]; const selectedCount = items.filter(t => this.selectedContextIds.has(t.id)).length; const isAllSelected = selectedCount === items.length && items.length > 0; const isPartial = selectedCount > 0 && selectedCount < items.length; const isExpanded = this.expandedFolders.has(folder); const safeFolder = folder.replace(/'/g, "\\'"); html += `<div class="mb-2 bg-white border border-slate-100 rounded-xl overflow-hidden select-none shadow-sm transition-all hover:shadow-md"><div class="flex items-center gap-2 p-3 bg-slate-50/50 cursor-pointer" onclick="app.toggleFolderExpansion('${safeFolder}', event)"><div onclick="app.toggleFolderSelection('${safeFolder}', event)" class="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-slate-200 rounded-lg shrink-0 transition-colors"><div class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isAllSelected || isPartial ? 'bg-brand-600 border-brand-600' : 'border-slate-300 bg-white'}">${isAllSelected ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white stroke-[3]"></i>' : (isPartial ? '<i data-lucide="minus" class="w-3.5 h-3.5 text-white stroke-[3]"></i>' : '')}</div></div><div class="flex-1 flex items-center justify-between min-w-0"><div class="flex items-center gap-2.5 overflow-hidden"><div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0"><i data-lucide="${isExpanded ? 'folder-open' : 'folder'}" class="w-4 h-4"></i></div><div class="flex flex-col"><span class="font-bold text-sm text-slate-700 truncate leading-tight">${folder}</span><span class="text-[10px] text-slate-400 font-medium">${items.length} videos</span></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}"></i></div></div><div class="${isExpanded ? 'block' : 'hidden'} border-t border-slate-100 bg-white pl-4 pr-2 py-2 space-y-1 animate-slide-up">${items.map(t => this.renderItemRow(t)).join('')}</div></div>`; }
+        listContainer.innerHTML = html; lucide.createIcons();
+    }
+    renderItemRow(t) {
+        const isSelected = this.selectedContextIds.has(t.id); const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString('vi-VN') : 'N/A';
+        return `<div onclick="app.toggleContextSelection('${t.id}', event)" class="flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-brand-50 border border-brand-100' : 'hover:bg-slate-50 border border-transparent'}"><div class="w-5 h-5 rounded border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-brand-600 border-brand-600' : 'border-slate-300 bg-white'}">${isSelected ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white stroke-[3]"></i>' : ''}</div><div class="min-w-0 flex-1"><h4 class="text-xs font-bold ${isSelected ? 'text-brand-700' : 'text-slate-700'} leading-snug break-words">${t.title || 'Không tiêu đề'}</h4><p class="text-[10px] text-slate-400 mt-0.5">${dateStr}</p></div></div>`;
+    }
+    toggleFolderExpansion(folderName, event) { if (event) event.stopPropagation(); if (this.expandedFolders.has(folderName)) this.expandedFolders.delete(folderName); else this.expandedFolders.add(folderName); const searchVal = document.getElementById('context-search-input')?.value || ''; this.renderDropdownItems(searchVal); }
+    updateDropdownLabel() { const count = this.selectedContextIds.size; const label = document.getElementById('dropdown-label'); const badge = document.getElementById('selected-count-badge'); badge.innerText = count; badge.classList.toggle('hidden', count === 0); if (count === 0) { label.innerText = "Chat Tự do (Chưa chọn video)"; label.className = "text-sm font-bold text-slate-800 truncate"; } else { const selectedTitles = this.db.filter(t => this.selectedContextIds.has(t.id)).map(t => t.title); label.innerText = `Đang chọn: ${selectedTitles.join(', ')}`; label.className = "text-sm font-bold text-brand-700 truncate"; } }
+    async sendMessage() {
+        const input = document.getElementById('chat-input'); const text = input.value.trim(); if (!text || !this.apiKey) return text ? this.toggleSettings() : null;
+        input.value = ''; this.renderMsg('user', text); const loadDiv = this.renderMsg('bot', '<div class="flex gap-1"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span><span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-75"></span><span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></span></div>');
+        let prompt = "Bạn là trợ lý AI thông minh. Hãy trả lời câu hỏi dựa trên các nội dung video được cung cấp dưới đây:";
+        if (this.selectedContextIds.size > 0) { let index = 1; this.db.forEach(t => { if (this.selectedContextIds.has(t.id)) prompt += `\n\n--- VIDEO ${index} ---\nTIÊU ĐỀ: ${t.title}\nNỘI DUNG TRANSCRIPT: ${t.transcript}`; index++; }); prompt += `\n\n--- YÊU CẦU ---\nHãy tổng hợp thông tin từ các video trên để trả lời câu hỏi của người dùng. Nếu thông tin không có trong video, hãy nói rõ.`; } else prompt = "Bạn là trợ lý AI hữu ích.";
+        try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt + "\n\nUser Question: " + text }] }] }) }); const data = await res.json(); loadDiv.remove(); if (data.error) { this.renderMsg('bot', `Lỗi API: ${data.error.message}`); return; } const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Không có phản hồi từ AI"; this.renderMsg('bot', reply); } catch (e) { loadDiv.remove(); this.renderMsg('bot', 'Lỗi kết nối mạng hoặc API Key không đúng.'); }
+    }
+    setChatContext(id) { this.selectedContextIds.clear(); this.selectedContextIds.add(id); this.updateDropdownLabel(); this.switchTab('chat'); }
+    renderMsg(role, text) {
+        const div = document.createElement('div'); div.className = `flex gap-3 animate-slide-up ${role === 'user' ? 'flex-row-reverse' : ''}`; const content = role === 'bot' && !text.includes('<div') ? marked.parse(text) : text;
+        div.innerHTML = `<div class="w-8 h-8 rounded-full ${role === 'user' ? 'bg-slate-200' : 'bg-brand-500 text-white'} flex items-center justify-center shrink-0"><i data-lucide="${role === 'user' ? 'user' : 'bot'}" class="w-4 h-4"></i></div><div class="${role === 'user' ? 'bg-brand-600 text-white rounded-tr-none' : 'bg-white border border-slate-100 rounded-tl-none text-slate-700'} p-4 rounded-2xl text-sm max-w-[85%] prose prose-sm ${role === 'user' ? 'prose-invert' : ''}">${content}</div>`;
+        document.getElementById('chat-messages').appendChild(div); div.scrollIntoView({ behavior: 'smooth' }); lucide.createIcons(); return div;
+    }
+}
+
+// Khởi tạo các lớp
+const auth = new Auth();
+const app = new App();
+const adminPanel = new AdminPanel();
+
+// Click outside để đóng dropdown
+document.addEventListener('click', function (event) {
+    const dropdown = document.getElementById('chat-dropdown-wrapper');
+    const trigger = document.getElementById('dropdown-trigger');
+    if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(event.target) && !trigger.contains(event.target)) {
+        app.toggleChatDropdown();
+    }
+});
+  
+    </script>
+</body>
+</html>
